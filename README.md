@@ -1,11 +1,9 @@
-# fft_impl
+# fft-impl
 
-fft_impl - Cooley-Tukey FFT and inverse FFT implementation.
+Fast Fourier Transform implementation. Zero dependencies, single file, Python 3.8+.
 
 ## Usage
 
 ```bash
-python3 fft_impl.py --test
+python3 fft_impl.py --help
 ```
-
-Zero dependencies. Python 3.8+.

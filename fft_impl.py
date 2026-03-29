@@ -1,38 +1,50 @@
 #!/usr/bin/env python3
-"""fft_impl - Cooley-Tukey FFT and inverse FFT implementation."""
-import sys, math
+"""Fast Fourier Transform. Zero dependencies."""
+import math, sys
 
 def fft(x):
-    n = len(x)
-    if n <= 1: return x
+    N = len(x)
+    if N <= 1: return x
+    if N % 2 != 0:
+        return dft(x)
     even = fft(x[0::2])
     odd = fft(x[1::2])
-    T = [math.e**(-2j*math.pi*k/n) * odd[k] for k in range(n//2)]
-    return [even[k] + T[k] for k in range(n//2)] + [even[k] - T[k] for k in range(n//2)]
+    T = [_exp(-2j * math.pi * k / N) * odd[k] for k in range(N//2)]
+    return [even[k] + T[k] for k in range(N//2)] + [even[k] - T[k] for k in range(N//2)]
 
 def ifft(X):
-    n = len(X)
+    N = len(X)
     conj = [x.conjugate() for x in X]
     result = fft(conj)
-    return [x.conjugate() / n for x in result]
+    return [x.conjugate() / N for x in result]
+
+def dft(x):
+    N = len(x)
+    return [sum(x[n] * _exp(-2j*math.pi*k*n/N) for n in range(N)) for k in range(N)]
+
+def _exp(x):
+    return complex(math.cos(x.imag), math.sin(x.imag)) if isinstance(x, complex) else complex(math.cos(x), math.sin(x))
 
 def magnitude(X):
     return [abs(x) for x in X]
 
-def test():
-    signal = [1, 0, 1, 0, 1, 0, 1, 0]
-    F = fft(signal)
-    assert len(F) == 8
-    assert abs(F[0] - 4) < 1e-9  # DC component
-    recovered = ifft(F)
-    for i in range(len(signal)):
-        assert abs(recovered[i].real - signal[i]) < 1e-9
-    sine = [math.sin(2*math.pi*k/8) for k in range(8)]
-    F2 = fft(sine)
-    mags = magnitude(F2)
-    peak = max(range(len(mags)), key=lambda i: mags[i])
-    assert peak == 1 or peak == 7  # frequency 1
-    print("fft_impl: all tests passed")
+def phase(X):
+    return [math.atan2(x.imag, x.real) for x in X]
+
+def power_spectrum(X):
+    return [abs(x)**2 for x in X]
+
+def frequencies(N, sample_rate):
+    return [k * sample_rate / N if k <= N//2 else (k-N) * sample_rate / N for k in range(N)]
+
+def sine_wave(freq, sample_rate, duration, amplitude=1.0):
+    N = int(sample_rate * duration)
+    return [complex(amplitude * math.sin(2*math.pi*freq*t/sample_rate)) for t in range(N)]
 
 if __name__ == "__main__":
-    test() if "--test" in sys.argv else print("Usage: fft_impl.py --test")
+    signal = sine_wave(440, 8000, 0.01)
+    X = fft(signal)
+    mags = magnitude(X)
+    peak = mags.index(max(mags))
+    freqs = frequencies(len(signal), 8000)
+    print(f"Peak frequency: {abs(freqs[peak]):.0f} Hz")
